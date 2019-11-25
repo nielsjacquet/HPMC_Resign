@@ -3,3 +3,6 @@ SignedIpas/
 
 ##Ignore the backup folder
 _BKP/
+
+##ignore the .mobileprovision files
+.mobileprovision
