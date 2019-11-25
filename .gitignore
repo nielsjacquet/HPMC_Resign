@@ -1,2 +1,5 @@
 ## Ignore the signedIpas folder
 SignedIpas/
+
+##Ignore the backup folder
+_BKP/
