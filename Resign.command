@@ -22,19 +22,19 @@ DBR()
 }
 
 ##Paths
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"    ##Homedir
-sharedResourcesPath="$DIR/_SharedResources"
-configDotPlistFolder="$DIR/_SharedResources/ConfigPlists"
-provisioningProfilePath="$DIR/_SharedResources/ProvisioningProfile"
-extractFile="$DIR/test.txt"
-entitlements="$DIR/_TEMP/entitlements.txt"
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"        # Homedir
+sharedResourcesPath="$DIR/_SharedResources"                               # Fixed shared resources path
+configDotPlistFolder="$DIR/_SharedResources/ConfigPlists"                 # Fixed Config.plist path
+provisioningProfilePath="$DIR/_SharedResources/ProvisioningProfile"       # Fixed provisioning profile path
+tempFolder="$DIR/_TEMP"                                                   # TEMP folder
+extractFile="$DIR/test.txt"                                               # Entitlement extration temp file
+entitlements="$DIR/_TEMP/entitlements.txt"                                # Entitlement file extracted from the ipa
+payloadFolder="$tempFolder/Payload"                                       # Payload folder after unzip
 
 ##Variables
-fixDate=$(date +"%Y%m%d - %Hh%M")
-codesign="GZ75RPKBFF"
-tempFolder="$DIR/_TEMP"
-payloadFolder="$tempFolder/Payload"
-LC_ALL=C
+fixDate=$(date +"%Y%m%d - %Hh%M")                                         # Fix the date and time for folder creation
+codesign="GZ75RPKBFF"                                                     # Apple developer certificate
+LC_ALL=C                                                                  # Set the langue to C/C++ --> used for delimiters and sed in editing the entitlements
 
 helpFunction()
 {
@@ -70,14 +70,14 @@ helpFunction()
 while getopts "v:e:c:a:i:?:h:o:" opt
 do
    case "$opt" in
-      v ) versionArg="$OPTARG" ;;
-      e ) entitlementsArg="$OPTARG" ;;
-      c ) confiArg="$OPTARG" ;;
-      a ) agentsArg="$OPTARG" ;;
-      i ) ipaArg="$OPTARG" ;;
-      o ) agentsOnly="$OPTARG" ;;
-      ? ) helpFunction ;; # Print helpFunction in case parameter is non-existent
-      h ) helpFunction ;; # Print helpFunction in case parameter is non-existent
+      v ) versionArg="$OPTARG" ;;           # HPMC version argument
+      e ) entitlementsArg="$OPTARG" ;;      # Entitlements argument
+      c ) confiArg="$OPTARG" ;;             # Config.plist argument
+      a ) agentsArg="$OPTARG" ;;            # Resign agent argument
+      i ) ipaArg="$OPTARG" ;;               # Ipa path argument
+      o ) agentsOnly="$OPTARG" ;;           # Resign the agents only argument
+      ? ) helpFunction ;;                   # Print helpFunction in case parameter is non-existent
+      h ) helpFunction ;;                   # Print helpFunction in case parameter is non-existent
    esac
 done
 
@@ -113,12 +113,12 @@ unZipFunction()
   printf "${BLUE}payloadApp: $payloadApp${NC}\n"
 }
 
-setVariablesFunction()
+setVariablesFunction()            # Setting the variables in function of the needed HPMC version.
 {
   printf "${GREEN}Setting The Variables according to the version${NC}\n"
 if [[ -z $versionArg ]]
   then
-    printf "${RED}There is no version specified! Please use -v 2.8 or 3.2 ${NC}\n"
+    printf "${RED}There is no version specified! Please use -v 2.8 or -v 3.2 ${NC}\n"
     exit 1
   else
     if [[ $versionArg = "2.8" ]]
@@ -283,7 +283,7 @@ extractBundleIDFunction()
   printf "${BLUE}bundleID: $bundleID${NC}\n"
 }
 
-copyConfigPlistFunction()
+copyConfigPlistFunction()   # insterting the chosen Config.plist in the app
 {
   printf "${GREEN}Copying the config.plist${BLUE}\n"
   if [[ -z $confiArg ]]
@@ -414,7 +414,8 @@ resignAgentsFunction()
 cleanupFunction()
 {
   cp -v -p -R "$entitlements" "$destinationFolder"
-  function copyPlist {
+  copyPlist()
+  {
     cd $tempFolder/Payload
     payloadApp=$(ls | grep '.app')
     infoPlist="$DIR/_TEMP/Payload/$payloadApp/info.plist"
