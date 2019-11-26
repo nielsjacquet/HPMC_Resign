@@ -9,12 +9,14 @@ NC='\033[0m'
 BLUE='\033[0;34m'
 
 ##Break function for readabillity
-function BR {
+BR()
+{
   echo "  "
 }
 
 ##DoubleBreak function for readabillity
-function DBR {
+DBR()
+{
   echo " "
   echo " "
 }
@@ -30,7 +32,7 @@ entitlements="$DIR/_TEMP/entitlements.txt"
 ##Variables
 fixDate=$(date +"%Y%m%d - %Hh%M")
 codesign="GZ75RPKBFF"
-tempFolder=$DIR/_TEMP
+tempFolder="$DIR/_TEMP"
 payloadFolder="$tempFolder/Payload"
 LC_ALL=C
 
