@@ -5,9 +5,9 @@
 	<key>insightsApiKey</key>
 	<string>183e0fae-9f2f-47f4-91e6-fd5925f72df3</string>
 	<key>apiTokenUrl</key>
-	<string>https://my-token-dev-2.ucb.com</string>
+	<string>https://my-token-dev4.ucb.com</string>
 	<key>apiUrl</key>
-	<string>https://my-api-mobile-dev-2.ucb.com</string>
+	<string>https://my-api-mobile-dev4.ucb.com</string>
 	<key>questionnaireInactivityTimer</key>
 	<integer>900</integer>
 	<key>minimumValuesToShowSearchBar</key>

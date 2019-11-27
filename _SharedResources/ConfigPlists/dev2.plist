@@ -22,7 +22,7 @@
 	<string>warn</string>
 	<key>clientCertificateAccessGroup</key>
 	<string>com.ucb.keychains.ipatconnect</string>
-<key>notificationHubNamespace</key>
+	<key>notificationHubNamespace</key>
   <string>ucb-nhn-btpm</string>
   <key>notificationHubName</key>
   <string>ucb-anh-btpm-801</string>

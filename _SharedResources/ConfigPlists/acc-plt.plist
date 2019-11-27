@@ -5,9 +5,9 @@
 	<key>insightsApiKey</key>
 	<string>183e0fae-9f2f-47f4-91e6-fd5925f72df3</string>
 	<key>apiTokenUrl</key>
-	<string>https://my-token-dev2.ucb.com</string>
+	<string>https://my-token-acc-2.ucb.com</string>
 	<key>apiUrl</key>
-	<string>https://my-api-mobile-dev2.ucb.com</string>
+	<string>https://my-api-mobile-acc-2.ucb.com</string>
 	<key>questionnaireInactivityTimer</key>
 	<integer>900</integer>
 	<key>minimumValuesToShowSearchBar</key>
@@ -22,13 +22,13 @@
 	<string>warn</string>
 	<key>clientCertificateAccessGroup</key>
 	<string>com.ucb.keychains.ipatconnect</string>
-<key>notificationHubNamespace</key>
+	<key>notificationHubNamespace</key>
   <string>ucb-nhn-btpm</string>
   <key>notificationHubName</key>
-  <string>ucb-anh-btpm-801</string>
+  <string>ucb-anh-btpm-001</string>
   <key>notificationHubKeyName</key>
   <string>DefaultListenSharedAccessSignature</string>
   <key>notificationHubKey</key>
-  <string>Rmp8z+65mKw+lpdkITudYNJctFDVPGAScg6SX2ggd+U=</string>
+  <string>k23Kc0baqrUrpun9/1/suVLHMVWJiEtEFFnN06raF3Y=</string>
 </dict>
 </plist>
