@@ -46,7 +46,8 @@ helpFunction()
    echo -e "\t-i ipaPath -- REQUIRED "
    echo -e "\t-c config.plist replace? --OPTIONAL"
    echo -e "\t\t-usable configs:"
-   function readPlist {
+   readPlist()
+   {
       for configPlists in "$configDotPlistFolder"/*
         do
           configname=$(basename $configPlists )
@@ -55,7 +56,8 @@ helpFunction()
         done
       configFileNameArrayLength=${#configFileNameArray[@]}
     }
-    function choosePlist {
+    choosePlist()
+    {
         for (( i = 0; i < $configFileNameArrayLength; i++ ))
           do
             echo -e "\t\t\t-${configFileNameArray[$i]}"
