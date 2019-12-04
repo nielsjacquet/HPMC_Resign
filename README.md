@@ -1,10 +1,10 @@
 # HPMC_Resign
  Usage of HPMC Resign:
 
-./Resign.command -h or -?
+./Resign -h or -?
 
 Example:
-./Resing.command **-v** *2.8* **-e** *api/hpmc* **-c** *dev-plt.plist* **-a** *yes* **-i** *"/path/of/the/ipa.ipa"*
+./Resing **-v** *2.8* **-e** *api/hpmc* **-c** *dev-plt.plist* **-a** *yes* **-i** *"/path/of/the/ipa.ipa"*
 
 -v Resigning HPMC 2.8/3.2 version -- **REQUIRED**
 
