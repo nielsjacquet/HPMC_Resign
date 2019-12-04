@@ -19,4 +19,5 @@ Example:
       --THE SCRIPT WILL OUTPUT A LIST OF THE AVAILABLE .PLISTS--
 
 -a resign Agents in the same loop? yes or no -- **OPTIONAL**
+
 -o agents ONLY -- **OPTIONAL** *--> IF USED, USE NO OTHER AGRUMENTS THEN* -v -- **REQUIRED**
