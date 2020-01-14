@@ -36,12 +36,13 @@ fixDate=$(date +"%Y%m%d - %Hh%M")                                         # Fix 
 codesign="GZ75RPKBFF"                                                     # Apple developer certificate
 LC_ALL=C                                                                  # Set the langue to C/C++ --> used for delimiters and sed in editing the entitlements
 
+
 helpFunction()
 {
    echo ""
-   echo "Usage: $0 -v 2.8 -e api -c dev-plt.plist -a yes -i ipaPath"
+   echo "Usage: $0 -v 2.8 -e ipa -c dev-plt.plist -a yes -i ipaPath"
    echo -e "\t-v Resigning HPMC 2.8/3.2 version -- REQUIRED"
-   echo -e "\t-e entitlements hpmc or api -- REQUIRED"
+   echo -e "\t-e entitlements hpmc or ipa -- REQUIRED"
    echo -e "\t-a resign Agents? yes or no -- OPTIONAL"
    echo -e "\t-i ipaPath -- REQUIRED "
    echo -e "\t-c config.plist replace? --OPTIONAL"
@@ -251,10 +252,22 @@ extractEntitlementsFunction()
 editEntitlementsFunction()
 {
   printf "${GREEN}Editing the entitlements\n"
+  devApns=$(cat $entitlements | grep "development")
+  prodApns=$(cat $entitlements | grep "production")
   LC_ALL=C sed -i '' 's/^.*<?xml/<?xml/g' $entitlements
   LC_ALL=C sed -i '' 's/false/true/g' $entitlements
   LC_ALL=C sed -i '' 's/<key>aps-environment<\/key>//g' $entitlements
-  LC_ALL=C sed -i '' 's/<string>production<\/string>//g' $entitlements
+  if [[ $devApns = "Binary file (standard input) matches" ]]
+   then
+    echo dev: $devApns
+    LC_ALL=C sed -i '' 's/<string>development<\/string>//g' $entitlements
+  fi
+
+  if [[ $prodApns = "Binary file (standard input) matches" ]]
+   then
+    echo prod: $prodApns
+    LC_ALL=C sed -i '' 's/<string>production<\/string>//g' $entitlements
+  fi
   cat $entitlements
   printf "${NC}\n"
 }
@@ -456,7 +469,10 @@ if [[ $agentsOnly = "yes" ]]
       zipIpaFunction
       getNewZippedIpaFunction
       signHPMCFunction
-      resignAgentsFunction
+        if [[ $agentsArg = "yes" ]]
+          then
+            resignAgentsFunction
+        fi
       cleanupFunction
     fi
 fi
