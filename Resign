@@ -43,7 +43,7 @@ helpFunction()
 {
    echo ""
    echo "Usage: $0 -v 2.8 -e ipa -c dev-plt -a yes -i ipaPath"
-   echo -e "\t-v Resigning HPMC 2.8/3.2 version -- REQUIRED"
+   echo -e "\t-v Resigning HPMC 2.8/3.3 version -- REQUIRED"
    echo -e "\t-e entitlements hpmc or ipa -- REQUIRED"
    echo -e "\t-a resign Agents? yes or no -- OPTIONAL"
    echo -e "\t One of the following needs to be used -i or -f"
@@ -165,7 +165,7 @@ setVariablesFunction()            # Setting the variables in function of the nee
   printf "${GREEN}Setting The Variables according to the version${NC}\n"
 if [[ -z $versionArg ]]
   then
-    printf "${RED}There is no version specified! Please use -v 2.8 or -v 3.2 ${NC}\n"
+    printf "${RED}There is no version specified! Please use -v 2.8 or -v 3.3 ${NC}\n"
     exitProcedure
   else
     if [[ $versionArg = "2.8" ]]
@@ -183,6 +183,16 @@ if [[ -z $versionArg ]]
       resourcesPath="$DIR/HPMC3.2/Resources"
       iosJsPath="$resourcesPath/ios"
       agentFolder="$DIR/HPMC3.2/OriginalAgents"
+      printf "${BLUE}Version: $versionArg\n"
+      printf "resourcesPath: $resourcesPath\n"
+      printf "iosJsPath: $iosJsPath\n"
+      printf "agentFolder: $agentFolder${NC}\n"
+    fi
+    if [[ $versionArg = "3.2" ]]
+      then
+      resourcesPath="$DIR/HPMC3.3/Resources"
+      iosJsPath="$resourcesPath/ios"
+      agentFolder="$DIR/HPMC3.3/OriginalAgents"
       printf "${BLUE}Version: $versionArg\n"
       printf "resourcesPath: $resourcesPath\n"
       printf "iosJsPath: $iosJsPath\n"
@@ -207,11 +217,15 @@ provisionCheckFunction()
   fi
   UDIDPresence=$(strings "$provisioningProfilePath" | grep -c $deviceUDIDArg)
   printf "${BLUE}UDIDPresence = $UDIDPresence${NC}\n"
-  if [[ $UDIDPresence < 1 ]]
+  if [[ ! -z $deviceUDIDArg ]]
    then
-    printf "${RED}The device UDID is not in the provisioning profile, please contact the mobility team${NC}\n"
-    exitProcedure
+     if [[ $UDIDPresence < 1 ]]
+      then
+       printf "${RED}The device UDID is not in the provisioning profile, please contact the mobility team${NC}\n"
+       exitProcedure
+     fi
   fi
+
 }
 
 dylibCheckFunction()

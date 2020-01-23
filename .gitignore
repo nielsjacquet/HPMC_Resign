@@ -12,3 +12,5 @@ _BKP/
 
 ##Ignore the shared Resources
 _SharedResources/
+
+*.ipa
