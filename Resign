@@ -43,7 +43,7 @@ helpFunction()
 {
    echo ""
    echo "Usage: $0 -v 2.8 -e ipa -c dev-plt -a yes -i ipaPath"
-   echo -e "\t-v Resigning HPMC 2.8/3.3 version -- REQUIRED"
+   echo -e "\t-v Resigning HPMC 2.8/3.2/3.3 version -- REQUIRED"
    echo -e "\t-e entitlements hpmc or ipa -- REQUIRED"
    echo -e "\t-a resign Agents? yes or no -- OPTIONAL"
    echo -e "\t One of the following needs to be used -i or -f"
