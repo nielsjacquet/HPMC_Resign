@@ -16,6 +16,8 @@
 	<integer>15</integer>
 	<key>studyLogoName</key>
 	<string>study-logo.png</string>
+	<key>largeStudyLogoName</key>
+	<string>large-study-logo.png</string>
 	<key>maximumSupportedNotifications</key>
 	<integer>64</integer>
 	<key>logLevel</key>
