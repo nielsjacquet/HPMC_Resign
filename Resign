@@ -188,7 +188,7 @@ if [[ -z $versionArg ]]
       printf "iosJsPath: $iosJsPath\n"
       printf "agentFolder: $agentFolder${NC}\n"
     fi
-    if [[ $versionArg = "3.2" ]]
+    if [[ $versionArg = "3.3" ]]
       then
       resourcesPath="$DIR/HPMC3.3/Resources"
       iosJsPath="$resourcesPath/ios"
@@ -233,6 +233,7 @@ dylibCheckFunction()
   printf "${GREEN}Setting dylib${NC}\n"
   cd $resourcesPath
   amountOfdylibs=$(ls | grep -c ".dylib")
+  printf "${BLUE}Amount of dylib: $amountOfdylibs${NC}\n"
   if [[ $amountOfdylibs != 1 ]]
     then
       printf "${RED}There is an issue with the dylib file, please go to the $resourcesPath folder!${NC}\n"
