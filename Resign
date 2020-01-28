@@ -7,6 +7,7 @@ YELLOW='\033[0;33m'
 GREEN='\033[0;32m'
 NC='\033[0m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 
 ##Break function for readabillity
 BR()
@@ -215,17 +216,32 @@ provisionCheckFunction()
       provisioningProfilePath="$provisioningProfilePath/$profiledot"
       printf "${BLUE}ProvisioningProfile: $provisioningProfilePath${NC}\n"
   fi
-  UDIDPresence=$(strings "$provisioningProfilePath" | grep -c $deviceUDIDArg)
-  printf "${BLUE}UDIDPresence = $UDIDPresence${NC}\n"
-  if [[ ! -z $deviceUDIDArg ]]
+
+  if [[ -z $deviceUDIDArg ]]
    then
-     if [[ $UDIDPresence < 1 ]]
-      then
-       printf "${RED}The device UDID is not in the provisioning profile, please contact the mobility team${NC}\n"
-       exitProcedure
-     fi
+    printf "${RED}The -u option is used but there is no value assigned${NC}\n"
+    exitProcedure
   fi
 
+  if [[ ! -z $deviceUDIDArg ]]
+   then
+    printf "${CYAN}The -u option is used, deviceUDIDArg content: $deviceUDIDArg${NC}\n"
+    deviceUDIDArgCount=${#deviceUDIDArg}
+    echo $deviceUDIDArgCount
+      if [[ $deviceUDIDArgCount != 40 ]]
+        then
+          printf "${RED}Device UDID is not the correct length, please recheck the UDID${NC}\n"
+          exitProcedure
+      fi
+    printf "${GREEN}Checking for the precense of the UDID in the provioning profile${NC}\n"
+    UDIDPresence=$(strings "$provisioningProfilePath" | grep -c $deviceUDIDArg)
+    printf "${CYAN}UDIDPresence = $UDIDPresence${NC}\n"
+      if [[ $UDIDPresence < 1 ]]
+        then
+          printf "${RED}The device UDID is not in the provisioning profile, please contact the mobility team${NC}\n"
+          exitProcedure
+      fi
+  fi
 }
 
 dylibCheckFunction()
