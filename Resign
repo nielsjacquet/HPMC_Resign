@@ -73,7 +73,7 @@ helpFunction()
     readPlist
     choosePlist
     echo -e "\t-o agents ONLY -- OPTIONAL --> IF USED, USE NO OTHER AGRUMENTS THEN -v --REQUIRED "
-   exitProcedure # Exit script after printing help
+    exitProcedure # Exit script after printing help
 }
 
 while getopts "v:e:c:a:i:?:h:o:u:f:" opt
