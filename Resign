@@ -217,11 +217,12 @@ provisionCheckFunction()
       printf "${BLUE}ProvisioningProfile: $provisioningProfilePath${NC}\n"
   fi
 
-  if [[ -z $deviceUDIDArg ]]
-   then
-    printf "${RED}The -u option is used but there is no value assigned${NC}\n"
-    exitProcedure
-  fi
+  # if [[ -z $deviceUDIDArg ]]
+  #  then
+  #   printf "${RED}The -u option is used but there is no value assigned${NC}\n"
+  #   echo deviceUDIDArg: $deviceUDIDArg
+  #   exitProcedure
+  # fi
 
   if [[ ! -z $deviceUDIDArg ]]
    then
