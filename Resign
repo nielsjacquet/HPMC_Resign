@@ -553,6 +553,7 @@ if [[ $agentsOnly = "yes" ]]
     setVariablesFunction
     provisionCheckFunction
     resignAgentsFunction
+    open "$signedAgentsFolder/$dateDir"
   else
     if [[ -z $versionArg ]] || [[ -z $entitlementsArg ]]
     then
@@ -574,9 +575,11 @@ if [[ $agentsOnly = "yes" ]]
       zipIpaFunction
       getNewZippedIpaFunction
       signHPMCFunction
+      open "$destinationFolder"
         if [[ $agentsArg = "yes" ]]
           then
             resignAgentsFunction
+            open "$signedAgentsFolder/$dateDir"
         fi
       cleanupFunction
     fi
