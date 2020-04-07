@@ -174,31 +174,23 @@ if [[ -z $versionArg ]]
       resourcesPath="$DIR/HPMC2.8/Resources"
       iosJsPath="$resourcesPath/HybridJS/ios"
       agentFolder="$DIR/HPMC2.8/OriginalAgents"
-      printf "${BLUE}Version: $versionArg\n"
-      printf "resourcesPath: $resourcesPath\n"
-      printf "iosJsPath: $iosJsPath\n"
-      printf "agentFolder: $agentFolder${NC}\n"
     fi
     if [[ $versionArg = "3.2" ]]
       then
       resourcesPath="$DIR/HPMC3.2/Resources"
       iosJsPath="$resourcesPath/ios"
       agentFolder="$DIR/HPMC3.2/OriginalAgents"
-      printf "${BLUE}Version: $versionArg\n"
-      printf "resourcesPath: $resourcesPath\n"
-      printf "iosJsPath: $iosJsPath\n"
-      printf "agentFolder: $agentFolder${NC}\n"
     fi
     if [[ $versionArg = "3.3" ]]
       then
       resourcesPath="$DIR/HPMC3.3/Resources"
       iosJsPath="$resourcesPath/ios"
       agentFolder="$DIR/HPMC3.3/OriginalAgents"
-      printf "${BLUE}Version: $versionArg\n"
-      printf "resourcesPath: $resourcesPath\n"
-      printf "iosJsPath: $iosJsPath\n"
-      printf "agentFolder: $agentFolder${NC}\n"
     fi
+    printf "${BLUE}Version: $versionArg\n"
+    printf "resourcesPath: $resourcesPath\n"
+    printf "iosJsPath: $iosJsPath\n"
+    printf "agentFolder: $agentFolder${NC}\n"
 fi
 }
 
