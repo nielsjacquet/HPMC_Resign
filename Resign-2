@@ -40,6 +40,12 @@ codesign="GZ75RPKBFF"                                                     # Appl
 LC_ALL=C                                                                  # Set the langue to C/C++ --> used for delimiters and sed in editing the entitlements
 
 
+exitProcedure()
+{
+  rm -rf $tempFolder
+  exit 1
+}
+
 helpFunction()
 {
    echo ""
@@ -388,58 +394,10 @@ copyConfigPlistFunction()   # insterting the chosen Config.plist in the app
     setNewIpaNameFuntion
   else
     case $confiArg in
-      dev-plt )
+      $confiArg )
         echo $confiArg
-        cp -v "$sharedResourcesPath/ConfigPlists/dev-plt.plist" "$payloadFolder/$payloadApp/Config.plist"
+        cp -v "$sharedResourcesPath/ConfigPlists/"$confiArg".plist" "$payloadFolder/$payloadApp/Config.plist"
         ;;
-      int )
-        echo $confiArg
-        cp -v "$sharedResourcesPath/ConfigPlists/int.plist" "$payloadFolder/$payloadApp/Config.plist"
-        ;;
-      dev-2 )
-        echo $confiArg
-        cp -v "$sharedResourcesPath/ConfigPlists/dev-2.plist" "$payloadFolder/$payloadApp/Config.plist"
-        ;;
-      acc-plt )
-        echo $confiArg
-        cp -v "$sharedResourcesPath/ConfigPlists/acc-plt.plist" "$payloadFolder/$payloadApp/Config.plist"
-        ;;
-        dev-7 )
-          echo $confiArg
-          cp -v "$sharedResourcesPath/ConfigPlists/dev-7.plist" "$payloadFolder/$payloadApp/Config.plist"
-          ;;
-        dev2 )
-          echo $confiArg
-          cp -v "$sharedResourcesPath/ConfigPlists/dev2.plist" "$payloadFolder/$payloadApp/Config.plist"
-            ;;
-        dev4 )
-          echo $confiArg
-          cp -v "$sharedResourcesPath/ConfigPlists/dev4.plist" "$payloadFolder/$payloadApp/Config.plist"
-            ;;
-        dev3 )
-          echo $confiArg
-          cp -v "$sharedResourcesPath/ConfigPlists/dev3.plist" "$payloadFolder/$payloadApp/Config.plist"
-            ;;
-        dev-3 )
-          echo $confiArg
-          cp -v "$sharedResourcesPath/ConfigPlists/dev-3.plist" "$payloadFolder/$payloadApp/Config.plist"
-            ;;
-        DelSub )
-          echo $confiArg
-          cp -v "$sharedResourcesPath/ConfigPlists/DelSub.plist" "$payloadFolder/$payloadApp/Config.plist"
-            ;;
-        PLT001-DEV )
-          echo $confiArg
-          cp -v "$sharedResourcesPath/ConfigPlists/PLT001-DEV.plist" "$payloadFolder/$payloadApp/Config.plist"
-            ;;
-        PLT001-ACC )
-          echo $confiArg
-          cp -v "$sharedResourcesPath/ConfigPlists/PLT001-ACC.plist" "$payloadFolder/$payloadApp/Config.plist"
-                ;;
-        DelTest )
-            echo $confiArg
-            cp -v "$sharedResourcesPath/ConfigPlists/DelTest.plist" "$payloadFolder/$payloadApp/Config.plist"
-                        ;;
     esac
   fi
   printf "${NC}\n"
@@ -581,11 +539,6 @@ cleanupFunction()
   rm -rf $tempFolder
 }
 
-exitProcedure()
-{
-  rm -rf $tempFolder
-  exit 1
-}
 
 if [[ $agentsOnly = "yes" ]]
   then
