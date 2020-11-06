@@ -50,7 +50,7 @@ helpFunction()
 {
    echo ""
    echo "Usage: $0 -v 2.8 -e ipa -c dev-plt -a yes -i ipaPath"
-   echo -e "\t-v Resigning HPMC 2.8/3.2/3.3/3.4 version -- REQUIRED"
+   echo -e "\t-v Resigning HPMC 2.8/3.2/3.3/3.4/3.4p2 version -- REQUIRED"
    echo -e "\t-e entitlements hpmc or ipa -- REQUIRED"
    echo -e "\t-a resign Agents? yes or no -- OPTIONAL"
    echo -e "\t One of the following needs to be used -i or -f"
@@ -172,7 +172,7 @@ setVariablesFunction()            # Setting the variables in function of the nee
   printf "${GREEN}Setting The Variables according to the version${NC}\n"
 if [[ -z $versionArg ]]
   then
-    printf "${RED}There is no version specified! Please use -v 2.8 or -v 3.3 ${NC}\n"
+    printf "${RED}There is no version specified! Please use -v ${NC}\n"
     exitProcedure
   else
     if [[ $versionArg = "2.8" ]]
@@ -198,6 +198,12 @@ if [[ -z $versionArg ]]
       resourcesPath="$DIR/HPMC3.4/Resources"
       iosJsPath="$resourcesPath/ios"
       agentFolder="$DIR/HPMC3.4/OriginalAgents"
+    fi
+    if [[ $versionArg = "3.4p2" ]]
+      then
+      resourcesPath="$DIR/HPMC3.4p2/Resources"
+      iosJsPath="$resourcesPath/ios"
+      agentFolder="$DIR/HPMC3.4p2/OriginalAgents"
     fi
     printf "${BLUE}Version: $versionArg\n"
     printf "resourcesPath: $resourcesPath\n"
@@ -451,7 +457,7 @@ signHPMCFunction()
           ;;
       esac
   fi
-  if [[ $versionArg = 3.4 ]]
+  if [[ $versionArg = 3.4 ]] || [[ $versionArg = 3.4p2 ]]
     then
       case $entitlementsArg in
         hpmc )
@@ -508,7 +514,7 @@ resignAgentsFunction()
         then
           ./HPMCEnabler "$agentFolder/$ogIpa" -codesign $codesign -p "$provisioningProfilePath" -v -V -n "$ogIpa" -d "$signedAgentsFolder/$dateDir"
       fi
-      if [[ $versionArg = 3.4 ]]
+      if [[ $versionArg = 3.4 ]] || [[ $versionArg = 3.4p2 ]]
         then
           ./iOSEnabler "$agentFolder/$ogIpa" -codesign $codesign -p "$provisioningProfilePath" -v -V -n "$ogIpa" -d "$signedAgentsFolder/$dateDir"
       fi
