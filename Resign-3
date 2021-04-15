@@ -57,32 +57,13 @@ helpFunction()
    echo -e "\t-i ipaPath -- REQUIRED "
    echo -e "\t-f MyUCB4me version"
    echo -e "\t-u to check the precense of the UDID of the device in the provisioning profile"
-   echo -e "\t-c config.plist replace? --OPTIONAL"
-   echo -e "\t\t-usable configs:"
-   readPlist()
-   {
-      for configPlists in "$configDotPlistFolder"/*
-        do
-          configname=$(basename $configPlists )
-          configFileNameArray+=("$configname")
-          configPathArray+=("$configPlists")
-        done
-      configFileNameArrayLength=${#configFileNameArray[@]}
-    }
-    choosePlist()
-    {
-        for (( i = 0; i < $configFileNameArrayLength; i++ ))
-          do
-            echo -e "\t\t\t-${configFileNameArray[$i]}"
-          done
-    }
-    readPlist
-    choosePlist
-    echo -e "\t-o agents ONLY -- OPTIONAL --> IF USED, USE NO OTHER AGRUMENTS THEN -v --REQUIRED "
+   echo -e "\t-c replace endpoints with study --OPTIONAL"
+   echo -e "\t-t environment like dev/acc/prd --REQUERED when using -c"
+   echo -e "\t-o agents ONLY -- OPTIONAL --> IF USED, USE NO OTHER AGRUMENTS THEN -v --REQUIRED "
     exitProcedure # Exit script after printing help
 }
 
-while getopts "v:e:c:a:i:?:h:o:u:f:" opt
+while getopts "v:e:c:a:i:?:h:o:u:f:t:" opt
 do
    case "$opt" in
       v ) versionArg="$OPTARG" ;;           # HPMC version argument
@@ -92,7 +73,8 @@ do
       i ) ipaArg="$OPTARG" ;;               # Ipa path argument
       o ) agentsOnly="$OPTARG" ;;           # Resign the agents only argument
       u ) deviceUDIDArg="$OPTARG" ;;           # DeviceUDID argument
-      f)  ipaVersionArg="$OPTARG" ;;           # IpaVersion number argument
+      f ) ipaVersionArg="$OPTARG" ;;           # IpaVersion number arguments
+      t ) environmentArg="$OPTARG" ;;       ## environment like dev/acc/prd
       ? ) helpFunction ;;                   # Print helpFunction in case parameter is non-existent
       h ) helpFunction ;;                   # Print helpFunction in case parameter is non-existent
    esac
@@ -405,12 +387,83 @@ copyConfigPlistFunction()   # insterting the chosen Config.plist in the app
     printf "${BLUE}No external config.plist in place${NC}\n"
     setNewIpaNameFuntion
   else
-    case $confiArg in
-      $confiArg )
-        echo $confiArg
-        cp -v "$sharedResourcesPath/ConfigPlists/"$confiArg".plist" "$payloadFolder/$payloadApp/Config.plist"
-        ;;
-    esac
+    if [[ -z $environmentArg ]]
+    then
+      exitProcedure
+    fi
+    cd $tempFolder/Payload
+    payloadApp=$(ls | grep '.app')
+    plistConfig="$payloadApp/Config.plist"
+    urlCalculator()
+    {
+      endPointsArg=$confiArg
+      case $environmentArg in
+        PRD )
+        apiUrl="https://"$endPointsArg"-api-mtls.my.ucb.com"
+        tokenUrl="https://"$endPointsArg"-token-mtls.my.ucb.com"
+        apiSignalrOrigin="https://"$endPointsArg"-televisits.my.ucb.be"
+        apiSignalrUrl="https://apis.ucb-apps.be/v1/btpa-"$endPointsArg"-api"
+        notificationHubNamespace="ucb-nhn-btpm"
+        notificationHubName="ucb-anh-btpm-001"
+        notificationHubKeyName="DefaultListenSharedAccessSignature"
+        notificationHubKey="k23Kc0baqrUrpun9/1/suVLHMVWJiEtEFFnN06raF3Y="
+          ;;
+        ACC )
+        apiUrl="https://"$endPointsArg"-acc-api-mtls.my.ucb-acc.com"
+        tokenUrl="https://"$endPointsArg"-acc-token-mtls.my.ucb-acc.com"
+        apiSignalrOrigin="https://"$endPointsArg"-acc-televisits.my.ucb-acc.be"
+        apiSignalrUrl="https://apis.ucb-apps.be/v1/acc-btpa-"$endPointsArg"-api"
+        notificationHubNamespace="ucb-nhn-btpm"
+        notificationHubName="ucb-anh-btpm-001"
+        notificationHubKeyName="DefaultListenSharedAccessSignature"
+        notificationHubKey="k23Kc0baqrUrpun9/1/suVLHMVWJiEtEFFnN06raF3Y="
+          ;;
+        DEV )
+        apiUrl="https://"$endPointsArg"-dev-api-mtls.my.ucb-dev.com"
+        tokenUrl="https://"$endPointsArg"-dev-token-mtls.my.ucb-dev.com"
+        apiSignalrOrigin="https://"$endPointsArg"-dev-televisits.my.ucb-dev.be"
+        apiSignalrUrl="https://apis.ucb-apps.be/v1/dev-btpa-"$endPointsArg"-api"
+        notificationHubNamespace="ucb-nhn-btpm"
+        notificationHubName="ucb-anh-btpm-801"
+        notificationHubKeyName="DefaultListenSharedAccessSignature"
+        notificationHubKey="Rmp8z+65mKw+lpdkITudYNJctFDVPGAScg6SX2ggd+U="
+          ;;
+      esac
+    }
+
+    editConfigPlist()
+    {
+    #plistConfig="$payloadFolder/$payloadApp/Config.plist"
+    apiTokenUrlInConfig=$(grep -A1 '<key>apiTokenUrl</key>' $plistConfig | grep -v "<key>apiTokenUrl</key>")
+    apiUrlInConfig=$(grep -A1 '<key>apiUrl</key>' $plistConfig | grep -v "<key>apiUrl</key>")
+    apiSignalrOriginInConfig=$(grep -A1 '<key>apiSignalrOrigin</key>' $plistConfig | grep -v "<key>apiSignalrOrigin</key>")
+    apiSignalrUrlInConfig=$(grep -A1 '<key>apiSignalrUrl</key>' $plistConfig | grep -v "<key>apiSignalrUrl</key>")
+    notificationHubNamespaceInConfig=$(grep -A1 '<key>notificationHubNamespace</key>' $plistConfig | grep -v "<key>notificationHubNamespace</key>")
+    notificationHubNameInConfig=$(grep -A1 '<key>notificationHubName</key>' $plistConfig | grep -v "<key>notificationHubName</key>")
+    notificationHubKeyNameInConfig=$(grep -A1 '<key>notificationHubKeyName</key>' $plistConfig | grep -v "<key>notificationHubKeyName</key>")
+    notificationHubKeyInConfig=$(grep -A1 '<key>notificationHubKey</key>' $plistConfig | grep -v "<key>notificationHubKey</key>")
+    echo replace apiTokenUrl
+    LC_ALL=C sed -i '' -e "s|$apiTokenUrlInConfig|  <string>$tokenUrl<\/string>|g" $plistConfig
+    echo replace apiUrl
+    LC_ALL=C sed -i '' -e "s|$apiUrlInConfig|  <string>$apiUrl<\/string>|g" $plistConfig
+    echo replace apiSignalrUrl
+    LC_ALL=C sed -i '' -e "s|$apisignalUrlInConfig|  <string>$apiSignalrUrl<\/string>|g" $plistConfig
+    echo replace apiSignalrOrigin
+    LC_ALL=C sed -i '' -e "s|$apiSignalrOriginInConfig|  <string>$apiSignalrOrigin<\/string>|g" $plistConfig
+    echo replace notificationHubNamespace
+    LC_ALL=C sed -i '' -e "s|$notificationHubNamespaceInConfig|  <string>$notificationHubNamespace<\/string>|g" $plistConfig
+    echo replace notificationHubName
+    LC_ALL=C sed -i '' -e "s|$notificationHubNameInConfig|  <string>$notificationHubName<\/string>|g" $plistConfig
+    echo replace notificationHubKeyName
+    LC_ALL=C sed -i '' -e "s|$notificationHubKeyNameInConfig|  <string>$notificationHubKeyName<\/string>|g" $plistConfig
+    echo replace notificationHubKey
+    LC_ALL=C sed -i '' -e "s|$notificationHubKeyInConfig|  <string>$notificationHubKey<\/string>|g" $plistConfig
+
+    }
+
+    urlCalculator
+    editConfigPlist
+
   fi
   printf "${NC}\n"
 }
