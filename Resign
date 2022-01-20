@@ -1,610 +1,190 @@
 #!/usr/bin/env bash
 
-
-##cosmetic functions and Variables
-##Colors
-RED='\033[0;31m'
-YELLOW='\033[0;33m'
-GREEN='\033[0;32m'
-NC='\033[0m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-
-##Break function for readabillity
-BR()
+## for debugging, remove all single #, double ## is used for documentation
+cleanup()
 {
-  echo "  "
+  rm -rf "$tempFolder"
 }
 
-##DoubleBreak function for readabillity
-DBR()
+exitRoutine()
 {
-  echo " "
-  echo " "
-}
-
-##Paths
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"        # Homedir
-sharedResourcesPath="$DIR/_SharedResources"                               # Fixed shared resources path
-configDotPlistFolder="$DIR/_SharedResources/ConfigPlists"                 # Fixed Config.plist path
-provisioningProfilePath="$DIR/_SharedResources/ProvisioningProfile"       # Fixed provisioning profile path
-tempFolder="$DIR/_TEMP"                                                   # TEMP folder
-extractFile="$DIR/test.txt"                                               # Entitlement extration temp file
-entitlements="$DIR/_TEMP/entitlements.txt"                                # Entitlement file extracted from the ipa
-payloadFolder="$tempFolder/Payload"                                       # Payload folder after unzip
-4meEntitlements="$sharedResourcesPath/entitlements.txt"
-
-repoFolder="/Volumes/Macintosh HD-1/Users/Shared/myUCB4me_AppRepo/"
-
-##Variables
-fixDate=$(date +"%Y%m%d-%Hh%M")                                         # Fix the date and time for folder creation
-codesign="GZ75RPKBFF"                                                     # Apple developer certificate
-#LC_ALL=C                                                                  # Set the langue to C/C++ --> used for delimiters and sed in editing the entitlements
-
-
-exitProcedure()
-{
-  rm -rf $tempFolder
+  cleanup
   exit 1
 }
 
 helpFunction()
 {
-   echo ""
-   echo "Usage: $0 -v 2.8 -e ipa -c dev-plt -a yes -i ipaPath"
-   echo -e "\t-v Resigning HPMC 2.8/3.2/3.3/3.4/3.4p2/3.5/3.5p3 version -- REQUIRED"
-   echo -e "\t-e entitlements hpmc or ipa -- REQUIRED"
-   echo -e "\t-a resign Agents? yes or no -- OPTIONAL"
-   echo -e "\t One of the following needs to be used -i or -f"
-   echo -e "\t-i ipaPath -- REQUIRED "
-   echo -e "\t-f MyUCB4me version"
-   echo -e "\t-u to check the precense of the UDID of the device in the provisioning profile"
-   echo -e "\t-c config.plist replace? --OPTIONAL"
-   echo -e "\t\t-usable configs:"
-   readPlist()
-   {
-      for configPlists in "$configDotPlistFolder"/*
-        do
-          configname=$(basename $configPlists )
-          configFileNameArray+=("$configname")
-          configPathArray+=("$configPlists")
-        done
-      configFileNameArrayLength=${#configFileNameArray[@]}
-    }
-    choosePlist()
-    {
-        for (( i = 0; i < $configFileNameArrayLength; i++ ))
-          do
-            echo -e "\t\t\t-${configFileNameArray[$i]}"
-          done
-    }
-    readPlist
-    choosePlist
-    echo -e "\t-o agents ONLY -- OPTIONAL --> IF USED, USE NO OTHER AGRUMENTS THEN -v --REQUIRED "
-    exitProcedure # Exit script after printing help
+  clear
+  echo
+  echo This script is drag and drop friendly,
+  echo you can just drop the ipa file after using -i as option
+  echo
+  echo Correct use of the script:
+  echo "Resign -v (version) -i (ipafile) -? or -h for help"
+  echo
+  cleanup
+  exit 1
 }
 
-while getopts "v:e:c:a:i:?:h:o:u:f:" opt
+## Define the aruments that can be used in the script
+while getopts "v:i:?:h:" opt
 do
    case "$opt" in
       v ) versionArg="$OPTARG" ;;           # HPMC version argument
-      e ) entitlementsArg="$OPTARG" ;;      # Entitlements argument
-      c ) confiArg="$OPTARG" ;;             # Config.plist argument
-      a ) agentsArg="$OPTARG" ;;            # Resign agent argument
       i ) ipaArg="$OPTARG" ;;               # Ipa path argument
-      o ) agentsOnly="$OPTARG" ;;           # Resign the agents only argument
-      u ) deviceUDIDArg="$OPTARG" ;;           # DeviceUDID argument
-      f)  ipaVersionArg="$OPTARG" ;;           # IpaVersion number argument
       ? ) helpFunction ;;                   # Print helpFunction in case parameter is non-existent
       h ) helpFunction ;;                   # Print helpFunction in case parameter is non-existent
-
    esac
 done
 
-ipaFromRepo()
+## check if needed options are filled in before running the script
+optionchecks()
 {
-  ipaName=$(ls "$repoFolder" | grep dev_$ipaVersionArg)
-  ls "$repoFolder" | grep dev_$ipaVersionArg
-  amountOfIpasFound=$(ls "$repoFolder" | grep -c dev_$ipaVersionArg)
-  printf "${BLUE}IpaName from grep dev_$ipaVersion : $ipaName${NC}\n"
-  printf "${BLUE}Amount of ipas found with matching version number $ipaVersionArg: $amountOfIpasFound ${NC}\n"
-  if [[ $amountOfIpasFound > 1 ]]
-    then
-     printf "${RED}The script has found more than one ipa, for now please contact niels jacquet${NC}\n"
-     exitProcedure
-    else
-    ipaPath="$repoFolder/$ipaName"
-    printf "${BLUE}ipaPath: $ipaPath${NC}\n"
-    unZipFunction
-  fi
-}
-
-ipaFromArgument()
-{
-  printf "${GREEN}Setting The ipa name${NC}\n"
-  ipaName=$(basename "$ipaArg")
-  ipaPath="$ipaArg"
-  ipaFileExtention="${ipaName##*.}"
-      if [[ $ipaFileExtention = "ipa" ]]
-        then
-          printf "${BLUE}ipa path: $ipaPath${NC}\n"
-          printf "${BLUE}ipa name: $ipaName${NC}\n"
-          unZipFunction
-      else
-        printf "${RED}The app filetype is incorrect${NC}\n"
-        exitProcedure
-      fi
-}
-
-ipaSource()
-{
-if [[ -z $ipaVersionArg ]] && [[ -z $ipaArg ]]
- then
-  printf "${RED}No ipa argument or 4me version selected, please read the readme file${NC}\n"
-fi
-
-if [[ ! -z $ipaVersionArg ]] && [[ ! -z $ipaArg ]]
- then
-  printf "${RED}Too many ipa source argument! Only one is accepted.${NC}\n"
-fi
-
-if [[ ! -z $ipaVersionArg ]] && [[  -z $ipaArg ]]
- then
-   printf "${GREEN}Ipa is coming from the app repo on the mobileserver${NC}\n"
-  ipaFromRepo
-fi
-
-if [[  -z $ipaVersionArg ]] && [[ ! -z $ipaArg ]]
- then
-   printf "${GREEN}Ipa is coming from the arguments${NC}\n"
-  ipaFromArgument
-fi
-}
-
-unZipFunction()
-{
-  printf "${GREEN}Unzipping the ipa${NC}\n"
-  unzip "$ipaPath" -d $tempFolder
-  cd $payloadFolder
-  payloadApp=$(ls | grep '.app')
-  printf "${BLUE}payloadApp: $payloadApp${NC}\n"
-}
-
-setVariablesFunction()            # Setting the variables in function of the needed HPMC version.
-{
-  printf "${GREEN}Setting The Variables according to the version${NC}\n"
-if [[ -z $versionArg ]]
+# echo optionchecks
+if [[ -z "$versionArg" ]] || [[ -z "$ipaArg" ]]
   then
-    printf "${RED}There is no version specified! Please use -v ${NC}\n"
-    exitProcedure
-  else
-    if [[ $versionArg = "2.8" ]]
-      then
-      resourcesPath="$DIR/HPMC2.8/Resources"
-      iosJsPath="$resourcesPath/HybridJS/ios"
-      agentFolder="$DIR/HPMC2.8/OriginalAgents"
-    fi
-    if [[ $versionArg = "3.2" ]]
-      then
-      resourcesPath="$DIR/HPMC3.2/Resources"
-      iosJsPath="$resourcesPath/ios"
-      agentFolder="$DIR/HPMC3.2/OriginalAgents"
-    fi
-    if [[ $versionArg = "3.3" ]]
-      then
-      resourcesPath="$DIR/HPMC3.3/Resources"
-      iosJsPath="$resourcesPath/ios"
-      agentFolder="$DIR/HPMC3.3/OriginalAgents"
-    fi
-    if [[ $versionArg = "3.4" ]]
-      then
-      resourcesPath="$DIR/HPMC3.4/Resources"
-      iosJsPath="$resourcesPath/ios"
-      agentFolder="$DIR/HPMC3.4/OriginalAgents"
-    fi
-    if [[ $versionArg = "3.4p2" ]]
-      then
-      resourcesPath="$DIR/HPMC3.4p2/Resources"
-      iosJsPath="$resourcesPath/ios"
-      agentFolder="$DIR/HPMC3.4p2/OriginalAgents"
-    fi
-    if [[ $versionArg = "3.5" ]]
-      then
-      resourcesPath="$DIR/HPMC3.5/Resources"
-      iosJsPath="$resourcesPath/ios"
-      agentFolder="$DIR/HPMC3.5/OriginalAgents"
-    fi
-    if [[ $versionArg = "3.5p3" ]]
-      then
-      resourcesPath="$DIR/HPMC3.5p3/Resources"
-      iosJsPath="$resourcesPath/ios"
-      agentFolder="$DIR/HPMC3.5p3/OriginalAgents"
-    fi
-    if [[ $versionArg = "3.5p5" ]]
-      then
+  helpFunction
+fi
+}
+
+## set the global variables
+setVars()
+{
+  codesign="GZ75RPKBFF"
+  fixDate=$(date +"%Y%m%d-%Hh%M")
+  DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"        # Homedir
+  profilePath="$DIR/_SharedResources/ProvisioningProfile"
+  tempFolder="$DIR/_TEMP"
+  ipaPath="$ipaArg"
+  extractFile="$tempFolder/test.txt"
+}
+
+## set the version specific variables
+versionVars()
+{
+  if [[ -z "$versionArg" ]]
+  then
+    echo no verion used
+    exitRoutine
+  fi
+
+  if [[ "$versionArg" = 3.5p5 ]]
+    then
       resourcesPath="$DIR/HPMC3.5p5/Resources"
       iosJsPath="$resourcesPath/ios"
-      agentFolder="$DIR/HPMC3.5p5/OriginalAgents"
-    fi
-    printf "${BLUE}Version: $versionArg\n"
-    printf "resourcesPath: $resourcesPath\n"
-    printf "iosJsPath: $iosJsPath\n"
-    printf "agentFolder: $agentFolder${NC}\n"
-fi
-}
-
-provisionCheckFunction()
-{
-  printf "${GREEN}Setting The provisioningProfile${NC}\n"
-  cd $provisioningProfilePath
-  amountOfprofiles=$(ls | grep -c ".mobileprovision")
-  if [[ $amountOfprofiles != 1 ]]
-    then
-      printf "${RED}There is an issue with the mobileprovision file, please go to the $sharedResourcesPath folder!${NC}\n"
-      exitProcedure
     else
-      profiledot=$(ls | grep ".mobileprovision")
-      provisioningProfilePath="$provisioningProfilePath/$profiledot"
-      printf "${BLUE}ProvisioningProfile: $provisioningProfilePath${NC}\n"
-  fi
-
-  # if [[ -z $deviceUDIDArg ]]
-  #  then
-  #   printf "${RED}The -u option is used but there is no value assigned${NC}\n"
-  #   echo deviceUDIDArg: $deviceUDIDArg
-  #   exitProcedure
-  # fi
-
-  if [[ ! -z $deviceUDIDArg ]]
-   then
-    printf "${CYAN}The -u option is used, deviceUDIDArg content: $deviceUDIDArg${NC}\n"
-    deviceUDIDArgCount=${#deviceUDIDArg}
-    echo $deviceUDIDArgCount
-      if [[ $deviceUDIDArgCount != 40 ]]
-        then
-          printf "${RED}Device UDID is not the correct length, please recheck the UDID${NC}\n"
-          exitProcedure
-      fi
-    printf "${GREEN}Checking for the precense of the UDID in the provioning profile${NC}\n"
-    UDIDPresence=$(strings "$provisioningProfilePath" | grep -c $deviceUDIDArg)
-    printf "${CYAN}UDIDPresence = $UDIDPresence${NC}\n"
-      if [[ $UDIDPresence < 1 ]]
-        then
-          printf "${RED}The device UDID is not in the provisioning profile, please contact the mobility team${NC}\n"
-          exitProcedure
-      fi
-  fi
-}
-
-dylibCheckFunction()
-{
-  printf "${GREEN}Setting dylib${NC}\n"
-  cd $resourcesPath
-  amountOfdylibs=$(ls | grep -c ".dylib")
-  printf "${BLUE}Amount of dylib: $amountOfdylibs${NC}\n"
-  if [[ $amountOfdylibs != 1 ]]
-    then
-      printf "${RED}There is an issue with the dylib file, please go to the $resourcesPath folder!${NC}\n"
-      exitProcedure
-    else
-      dylibdotlyb=$(ls | grep ".dylib")
-      dylib="$resourcesPath/$dylibdotlyb"
-      printf "${BLUE}dylib: $dylib${NC}\n"
-  fi
-}
-
-jsCheckFunction()
-{
-  printf "${GREEN}Checking the JS folder${NC}\n"
-  if [[ -d "$iosJsPath" ]]
-    then
-      printf "${BLUE}JavaScript directory: $iosJsPath${NC}\n"
-    else
-      printf "${RED}JavaScript directory is not available.${NC}\n"
-      exitProcedure
-  fi
-}
-
-destinationFolderCheckFunction()
-{
-  signedIpasFolder="$DIR/SignedIpas"
-  if [[ -d "$signedIpasFolder" ]]
-    then
-      printf "${GREEN}signedIpasFolder directory is available${NC}\n"
-      BR
-    else
-      printf "${RED}signedIpasFolder directory is not available,${GREEN} creating the directory${NC}\n"
-      BR
-      mkdir "$signedIpasFolder"
-  fi
-
-  signedAppsFolder="$signedIpasFolder/Apps"
-  if [[ -d "$signedAppsFolder" ]]
-    then
-      printf "${GREEN}signedAppsFolder directory is available${NC}\n"
-      BR
-    else
-      printf "${RED}signedAppsFolder directory is not available,${GREEN} creating the directory${NC}\n"
-      BR
-      mkdir "$signedAppsFolder"
-  fi
-
-  payloadAppCleaned=${ipaName%????}
-  destinationFolder="$DIR/SignedIpas/Apps/$fixDate-$payloadAppCleaned-HPMC_$versionArg-$confiArg"
-  if [[ -d "$destinationFolder" ]]
-  then
-    printf "${GREEN}DestinationFolder directory is available${NC}\n"
-    BR
-  else
-    printf "${RED}DestinationFolder directory is not available,${GREEN} creating the directory${NC}\n"
-    BR
-    mkdir "$destinationFolder"
-  fi
-
-}
-
-getProvisionedDevicesFunction()
-{
-  printf "${YELLOW}Getting the provisioned devices${GREEN}\n"
-  provDevices="$destinationFolder/ProvisionedDevices.txt"
-  LC_ALL=C sed -n '1, /<key>ProvisionedDevices/!p; /<key>ProvisionedDevices/p' "$provisioningProfilePath" >> $extractFile
-  LC_ALL=C sed '1,/TeamIdentifier/!d' $extractFile >> "$provDevices"
-  printf "${NC}\n"
-  rm $extractFile
-}
-
-extractEntitlementsFunction()
-{
-  printf "${GREEN}Extracting the entitlements${BLUE}\n"
-  cd $tempFolder/Payload
-  payloadApp=$(ls | grep '.app')
-  cd $tempFolder
-  codesign -d -vv --entitlements entitlements.txt --xml ./Payload/$payloadApp
-  plutil -convert xml1 $entitlements
-  printf "${NC}\n"
-}
-
-# editEntitlementsFunction()
-# {
-#   printf "${GREEN}Editing the entitlements\n"
-#   devApns=$(cat $entitlements | grep "development")
-#   prodApns=$(cat $entitlements | grep "production")
-#   LC_ALL=C sed -i '' 's/^.*<?xml/<?xml/g' $entitlements
-#   LC_ALL=C sed -i '' 's/false/true/g' $entitlements
-#   LC_ALL=C sed -i '' 's/<key>aps-environment<\/key>//g' $entitlements
-#   if [[ $devApns = "Binary file (standard input) matches" ]]
-#    then
-#     echo dev: $devApns
-#     LC_ALL=C sed -i '' 's/<string>development<\/string>//g' $entitlements
-#   fi
-#
-#   if [[ $prodApns = "Binary file (standard input) matches" ]]
-#    then
-#     echo prod: $prodApns
-#     LC_ALL=C sed -i '' 's/<string>production<\/string>//g' $entitlements
-#   fi
-#   cat $entitlements
-#   printf "${NC}\n"
-# }
-
-extractVersionFuntion()
-{
-  infoPlist="$DIR/_TEMP/Payload/$payloadApp/info.plist"
-  plutil -convert xml1 $infoPlist
-  printf "${GREEN}Extracting the app version${NC}\n"
-  buildVersionRude=$(cat $infoPlist | grep -A1 "CFBundleVersion")
-  printf "${BLUE}buildVersionRude $buildVersionRude\n"
-  buildVersionMinEnd=$(echo ${buildVersionRude%?????????})
-  printf "${BLUE}buildIDMinEnd: $buildVersionMinEnd\n"
-  buildVersionMinFront=$(echo ${buildVersionMinEnd:35})
-  buildVersion=$buildVersionMinFront
-  printf "${BLUE}buildVersion: $buildVersion${NC}\n"
-}
-
-extractBundleIDFunction()
-{
-  printf "${GREEN}Extracting the bundle id${NC}\n"
-  bundleIDRude=$(cat $infoPlist | grep -A1 "CFBundleIdentifier")
-  printf "${BLUE}bundleIDRude: $bundleIDRude\n"
-  bundleIDMinEnd=$(echo ${bundleIDRude%?????????})
-  printf "${BLUE}bundleIDMinEnd: $bundleIDMinEnd\n"
-  bundleIDMinFront=$(echo ${bundleIDMinEnd:38})
-  bundleID=$bundleIDMinFront
-  printf "${BLUE}bundleID: $bundleID${NC}\n"
-}
-
-copyConfigPlistFunction()   # insterting the chosen Config.plist in the app
-{
-  printf "${GREEN}Copying the config.plist${BLUE}\n"
-  if [[ -z $confiArg ]]
-   then
-    printf "${BLUE}No external config.plist in place${NC}\n"
-    setNewIpaNameFuntion
-  else
-    case $confiArg in
-      $confiArg )
-        echo $confiArg
-        cp -v "$sharedResourcesPath/ConfigPlists/"$confiArg".plist" "$payloadFolder/$payloadApp/Config.plist"
-        ;;
-    esac
-  fi
-  printf "${NC}\n"
-}
-
-setNewIpaNameFuntion()
-{
-  printf "${GREEN}Setting the new ipa name${BLUE}\n"
-  newipaName="$bundleID"_"$buildVersion"_HPMC-"$versionArg"_"$confiArg".ipa
-  printf "${BLUE}newipaName: $newipaName${NC}\n"
-}
-
-zipIpaFunction()
-{
-  printf "${GREEN}Zipping the payloadFolder${NC}\n"
-  cd $payloadFolder
-  echo payloadFolder $payloadFolder
-  find . -name ".DS_Store" -exec rm -rf {} +;
-  cd $tempFolder
-  zip -r "$newipaName" ./Payload
-}
-
-getNewZippedIpaFunction()
-{
-printf "${GREEN}Grabbing the new and edited ipa${NC}\n"
-cd $tempFolder
-newZippedIpa=$(ls | grep '.ipa')
-printf "${BLUE}getNewZippedIpa: $newZippedIpa ${NC}\n"
-}
-
-signHPMCFunction()
-{
-  printf "${GREEN}signing the app${NC}\n"
-  cd $resourcesPath
-  printf "${BLUE}ipa: $tempFolder/$newZippedIpa\n"
-  printf "dylib: $dylib\n"
-  printf "codesign: $codesign\n"
-  printf "provisioningProfile: $provisioningProfilePath\n"
-  printf "iosJsPath: $iosJsPath\n"
-  printf "destinationFolder: $destinationFolder\n"
-  printf "entitlements: $entitlements\n"
-  printf "newipaName: $newipaName${NC}\n"
-  if [[ $versionArg = 2.8 ]] || [[ $versionArg = 3.2 ]] || [[ $versionArg = 3.3 ]]
-    then
-      case $entitlementsArg in
-        hpmc )
-          ./HPMCEnabler "$tempFolder/$newZippedIpa" -inject $dylib -codesign $codesign -p $provisioningProfilePath -j $iosJsPath -n "$newipaName" -v -d "$destinationFolder"
-          ;;
-        ipa )
-          ./HPMCEnabler "$tempFolder/$newZippedIpa" -inject $dylib -codesign $codesign -p $provisioningProfilePath -j $iosJsPath -e $entitlements -n "$newipaName" -v -d "$destinationFolder"
-          ;;
-      esac
-  fi
-  if [[ $versionArg = 3.4 ]] || [[ $versionArg = 3.4p2 ]] || [[ $versionArg = 3.5 ]] || [[ $versionArg = 3.5p3 ]] || [[ $versionArg = 3.5p5 ]]
-    then
-      case $entitlementsArg in
-        hpmc )
-          ./iOSEnabler "$tempFolder/$newZippedIpa" -inject $dylib -codesign $codesign -p $provisioningProfilePath -j $iosJsPath -n "$newipaName" -v -d "$destinationFolder"
-          ;;
-        ipa )
-          ./iOSEnabler "$tempFolder/$newZippedIpa" -inject $dylib -codesign $codesign -p $provisioningProfilePath -j $iosJsPath -e $entitlements -n "$newipaName" -v -d "$destinationFolder"
-          ;;
-      esac
-  fi
-
-}
-
-resignAgentsFunction()
-{
-  if [[ $agentsOnly = "yes" ]] || [[ $agentsArg = "yes" ]]
-  then
-    printf "${GREEN}Resigning the Agents${NC}\n"
-    signedIpasFolder="$DIR/SignedIpas"
-    if [[ -d "$signedIpasFolder" ]]
-      then
-        printf "${GREEN}signedIpasFolder directory is available${NC}\n"
-        BR
-      else
-        printf "${RED}signedIpasFolder directory is not available,${GREEN} creating the directory${NC}\n"
-        BR
-        mkdir "$signedIpasFolder"
-    fi
-    signedAgentsFolder="$signedIpasFolder/Agents"
-    if [[ -d "$signedAgentsFolder" ]]
-      then
-        printf "${GREEN}signedAgentsFolder directory is available${NC}\n"
-        BR
-      else
-        printf "${RED}signedAgentsFolder directory is not available,${GREEN} creating the directory${NC}\n"
-        BR
-        mkdir "$signedAgentsFolder"
-    fi
-
-    cd "$signedAgentsFolder"
-    echo "$signedAgentsFolder"
-    dateDir=$fixDate" - HPMC "$versionArg
-    mkdir "$dateDir"
-    echo DateDir: "$dateDir"
-    echo agentFolder: "$agentFolder"
-
-    for agents in "$agentFolder"/*
-     do
-      ogIpa=$(echo "$(basename "$agents")")
-      echo "$ogIpa"
-      printf "${YELLOW}The ipa that will be signed: ${GREEN}$ogIpa${NC}\n"
-      cd "$resourcesPath"
-      if [[ $versionArg = 2.8 ]] || [[ $versionArg = 3.2 ]] || [[ $versionArg = 3.3 ]]
-        then
-          ./HPMCEnabler "$agentFolder/$ogIpa" -codesign $codesign -p "$provisioningProfilePath" -v -V -n "$ogIpa" -d "$signedAgentsFolder/$dateDir"
-      fi
-      if [[ $versionArg = 3.4 ]] || [[ $versionArg = 3.4p2 ]] || [[ $versionArg = 3.5 ]] || [[ $versionArg = "3.5p3" ]] || [[ $versionArg = "3.5p5" ]]
-        then
-          ./iOSEnabler "$agentFolder/$ogIpa" -codesign $codesign -p "$provisioningProfilePath" -v -V -n "$ogIpa" -d "$signedAgentsFolder/$dateDir"
-      fi
-    done
-  fi
-
-  printf "${YELLOW}Getting the provisioned devices for the agents folder${GREEN}\n"
-  provDevices="$signedAgentsFolder/$dateDir/ProvisionedDevices_agents.txt"
-  LC_ALL=C sed -n '1, /<key>ProvisionedDevices/!p; /<key>ProvisionedDevices/p' "$provisioningProfilePath" >> $extractFile
-  LC_ALL=C sed '1,/TeamIdentifier/!d' $extractFile >> "$provDevices"
-  printf "${NC}\n"
-  rm $extractFile
-}
-
-cleanupFunction()
-{
-  cp -v -p -R "$entitlements" "$destinationFolder"
-  copyPlist()
-  {
-    cd $tempFolder/Payload
-    payloadApp=$(ls | grep '.app')
-    infoPlist="$DIR/_TEMP/Payload/$payloadApp/info.plist"
-    configPlist="$DIR/_TEMP/Payload/$payloadApp/Config.plist"
-    cp -v -p -R "$infoPlist" "$destinationFolder"
-    cp -v -p -R "$configPlist" "$destinationFolder"
-    cd  $tempFolder
-    ipafile=$(ls | grep '.ipa')
-    cp -v -p -R "$ipafile" "$destinationFolder"
-  }
-  copyPlist
-  rm -rf $tempFolder
-}
-
-
-if [[ $agentsOnly = "yes" ]]
-  then
-    printf "${GREEN}Option resign only the agents${NC}\n"
-    setVariablesFunction
-    provisionCheckFunction
-    resignAgentsFunction
-    open "$signedAgentsFolder/$dateDir"
-  else
-    if [[ -z $versionArg ]] || [[ -z $entitlementsArg ]]
-    then
+      echo
+      echo no correct version is used
       helpFunction
-    else
-      ipaSource
-      setVariablesFunction
-      provisionCheckFunction
-      dylibCheckFunction
-      jsCheckFunction
-      destinationFolderCheckFunction
-      getProvisionedDevicesFunction
-      extractEntitlementsFunction
-      #editEntitlementsFunction
-      extractVersionFuntion
-      extractBundleIDFunction
-      copyConfigPlistFunction
-      setNewIpaNameFuntion
-      zipIpaFunction
-      getNewZippedIpaFunction
-      signHPMCFunction
-      open "$destinationFolder"
-        if [[ $agentsArg = "yes" ]]
-          then
-            resignAgentsFunction
-            open "$signedAgentsFolder/$dateDir"
-        fi
-      cleanupFunction
-    fi
-fi
+  fi
+}
+
+## grab the provisioning Profile in the shared resources folder
+getProfile()
+{
+  cd "$profilePath"
+  provisioningProfile=$(ls | grep ".mobileprovision")
+  provisioningProfile="$profilePath/$provisioningProfile"
+  # echo provisioningProfile: $provisioningProfile
+}
+
+## grab the dylib in the version specific resources folder
+setDylib()
+{
+  cd "$resourcesPath"
+  dylib=$(ls | grep ".dylib")
+  dyLib="$resourcesPath/$dylib"
+  # echo dylib: $dyLib
+}
+
+## unzip the ipa in the temp folder to extract the entitlements
+## and configs etc
+unZipFunction()
+{
+  unzip -qq "$ipaPath" -d "$tempFolder"
+  payloadFolder="$tempFolder/Payload"
+  cd "$payloadFolder"
+  payloadApp=$(ls | grep '.app')
+  # echo payloadFolder: $payloadFolder
+  # echo payloadApp: $payloadApp
+}
+
+## extract and modify the entitlements,
+## modification is needed as the dev profile fails when apns is enabled and get-task-allow is false
+extractEntitlements()
+{
+  cd "$tempFolder"
+  codesign -d -vv --entitlements entitlements.xml.plist --xml ./Payload/"$payloadApp"
+  entitlementsPath="$tempFolder/entitlements.xml.plist"
+  plutil -convert xml1 "$entitlementsPath"
+  #cat "$entitlementsPath"
+  LC_ALL=C sed -i '' 's/false/true/g' "$entitlementsPath"                                                    #edit the get-task-allow to true for the Resigning
+  #LC_ALL=C sed -i '' 's/8MHBGG6X8S.com.ucb.apps.myucb4me.dev/8MHBGG6X8S.*/g' "$entitlementsPath"             #edit the bundleid to wildcard for the Resigning
+  LC_ALL=C sed -i '' 's/<string>production<\/string>//g' "$entitlementsPath"
+  LC_ALL=C sed -i '' 's/<key>aps-environment<\/key>//g' "$entitlementsPath"
+  #cat "$entitlementsPath"
+}
+
+## Set the new name used in the signing
+setNewIpaName()
+{
+  nameDate=$(date +"%Y%m%d")
+  # echo nameDate: $nameDate
+  # echo ipaPath: $ipaPath
+  oldFullIpaName=$(basename $ipaPath)
+  # echo newipaName: $oldFullIpaName
+  oldBaseIpaName=$(echo ${oldFullIpaName%????})
+  # echo oldBaseIpaName: $oldBaseIpaName
+  newipaName="$oldBaseIpaName"-HPMCenabled-"$nameDate"-"$versionArg".ipa
+  # echo newipaName: $newipaName
+}
+
+## Make the new destination folder
+makeDestiationFolder()
+{
+  fixDateFolder="$DIR"/SignedIpas/Apps/"$fixDate"-"$oldBaseIpaName"-HPMCenabled
+  mkdir "$fixDateFolder"
+}
+
+## Do the actual resigning
+Resigning()
+{
+  cd "$resourcesPath"
+  ./iOSEnabler "$ipaPath" -inject $dylib -codesign $codesign -p $provisioningProfile -j $iosJsPath -e $entitlementsPath -n "$newipaName" -d "$fixDateFolder" #-v
+  ##                      -inject the dylib defined in the versionvars
+  ##                                     -codesign signature of the application
+  ##                                                         -p ProvisioningProfile with the correct signingcert (codesing) and devices defined in the apple dev page
+  ##                                                                                 -j path of the ios folder for extra frameworks
+  ##                                                                                               -e path of the extracted and modified entitlements used for Resigning
+  ##                                                                                                                     -n give the resigned app a name
+  ##                                                                                                                                      -d define the destation after resigning
+  ##                                                                                                                                                        #-v verbose that there is some output in the terminal remove # if needed for debugging.
+}
+
+## Copy extra information to the destination folder
+copy()
+{
+  cp "$entitlementsPath" "$fixDateFolder"
+  cp "$payloadFolder/$payloadApp/Info.plist" "$fixDateFolder"
+  cp "$payloadFolder/$payloadApp/Config.plist" "$fixDateFolder"
+  provDevices="$fixDateFolder/ProvisionedDevices.txt"
+  LC_ALL=C sed -n '1, /<key>ProvisionedDevices/!p; /<key>ProvisionedDevices/p' "$provisioningProfile" >> $extractFile
+  LC_ALL=C sed '1,/TeamIdentifier/!d' $extractFile >> "$provDevices"
+  rm $extractFile
+}
+
+###-----------------------------------
+#calling the funtions
+optionchecks
+setVars
+versionVars
+getProfile
+setDylib
+unZipFunction
+extractEntitlements
+setNewIpaName
+makeDestiationFolder
+Resigning
+copy
+cleanup
+open "$fixDateFolder"
