@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+
 ##cosmetic functions and Variables
 ##Colors
 RED='\033[0;31m'
@@ -31,20 +32,27 @@ tempFolder="$DIR/_TEMP"                                                   # TEMP
 extractFile="$DIR/test.txt"                                               # Entitlement extration temp file
 entitlements="$DIR/_TEMP/entitlements.txt"                                # Entitlement file extracted from the ipa
 payloadFolder="$tempFolder/Payload"                                       # Payload folder after unzip
+4meEntitlements="$sharedResourcesPath/entitlements.txt"
 
 repoFolder="/Volumes/Macintosh HD-1/Users/Shared/myUCB4me_AppRepo/"
 
 ##Variables
-fixDate=$(date +"%Y%m%d - %Hh%M")                                         # Fix the date and time for folder creation
+fixDate=$(date +"%Y%m%d-%Hh%M")                                         # Fix the date and time for folder creation
 codesign="GZ75RPKBFF"                                                     # Apple developer certificate
-LC_ALL=C                                                                  # Set the langue to C/C++ --> used for delimiters and sed in editing the entitlements
+#LC_ALL=C                                                                  # Set the langue to C/C++ --> used for delimiters and sed in editing the entitlements
 
+
+exitProcedure()
+{
+  rm -rf $tempFolder
+  exit 1
+}
 
 helpFunction()
 {
    echo ""
    echo "Usage: $0 -v 2.8 -e ipa -c dev-plt -a yes -i ipaPath"
-   echo -e "\t-v Resigning HPMC 2.8/3.2/3.3/3.4 version -- REQUIRED"
+   echo -e "\t-v Resigning HPMC 2.8/3.2/3.3/3.4/3.4p2/3.5/3.5p3 version -- REQUIRED"
    echo -e "\t-e entitlements hpmc or ipa -- REQUIRED"
    echo -e "\t-a resign Agents? yes or no -- OPTIONAL"
    echo -e "\t One of the following needs to be used -i or -f"
@@ -89,6 +97,7 @@ do
       f)  ipaVersionArg="$OPTARG" ;;           # IpaVersion number argument
       ? ) helpFunction ;;                   # Print helpFunction in case parameter is non-existent
       h ) helpFunction ;;                   # Print helpFunction in case parameter is non-existent
+
    esac
 done
 
@@ -166,7 +175,7 @@ setVariablesFunction()            # Setting the variables in function of the nee
   printf "${GREEN}Setting The Variables according to the version${NC}\n"
 if [[ -z $versionArg ]]
   then
-    printf "${RED}There is no version specified! Please use -v 2.8 or -v 3.3 ${NC}\n"
+    printf "${RED}There is no version specified! Please use -v ${NC}\n"
     exitProcedure
   else
     if [[ $versionArg = "2.8" ]]
@@ -192,6 +201,30 @@ if [[ -z $versionArg ]]
       resourcesPath="$DIR/HPMC3.4/Resources"
       iosJsPath="$resourcesPath/ios"
       agentFolder="$DIR/HPMC3.4/OriginalAgents"
+    fi
+    if [[ $versionArg = "3.4p2" ]]
+      then
+      resourcesPath="$DIR/HPMC3.4p2/Resources"
+      iosJsPath="$resourcesPath/ios"
+      agentFolder="$DIR/HPMC3.4p2/OriginalAgents"
+    fi
+    if [[ $versionArg = "3.5" ]]
+      then
+      resourcesPath="$DIR/HPMC3.5/Resources"
+      iosJsPath="$resourcesPath/ios"
+      agentFolder="$DIR/HPMC3.5/OriginalAgents"
+    fi
+    if [[ $versionArg = "3.5p3" ]]
+      then
+      resourcesPath="$DIR/HPMC3.5p3/Resources"
+      iosJsPath="$resourcesPath/ios"
+      agentFolder="$DIR/HPMC3.5p3/OriginalAgents"
+    fi
+    if [[ $versionArg = "3.5p5" ]]
+      then
+      resourcesPath="$DIR/HPMC3.5p5/Resources"
+      iosJsPath="$resourcesPath/ios"
+      agentFolder="$DIR/HPMC3.5p5/OriginalAgents"
     fi
     printf "${BLUE}Version: $versionArg\n"
     printf "resourcesPath: $resourcesPath\n"
@@ -297,7 +330,7 @@ destinationFolderCheckFunction()
   fi
 
   payloadAppCleaned=${ipaName%????}
-  destinationFolder="$DIR/SignedIpas/Apps/$fixDate - $payloadAppCleaned - HPMC_$versionArg - $confiArg"
+  destinationFolder="$DIR/SignedIpas/Apps/$fixDate-$payloadAppCleaned-HPMC_$versionArg-$confiArg"
   if [[ -d "$destinationFolder" ]]
   then
     printf "${GREEN}DestinationFolder directory is available${NC}\n"
@@ -326,32 +359,33 @@ extractEntitlementsFunction()
   cd $tempFolder/Payload
   payloadApp=$(ls | grep '.app')
   cd $tempFolder
-  codesign -d -vv --entitlements entitlements.txt ./Payload/$payloadApp
+  codesign -d -vv --entitlements entitlements.txt --xml ./Payload/$payloadApp
+  plutil -convert xml1 $entitlements
   printf "${NC}\n"
 }
 
-editEntitlementsFunction()
-{
-  printf "${GREEN}Editing the entitlements\n"
-  devApns=$(cat $entitlements | grep "development")
-  prodApns=$(cat $entitlements | grep "production")
-  LC_ALL=C sed -i '' 's/^.*<?xml/<?xml/g' $entitlements
-  LC_ALL=C sed -i '' 's/false/true/g' $entitlements
-  LC_ALL=C sed -i '' 's/<key>aps-environment<\/key>//g' $entitlements
-  if [[ $devApns = "Binary file (standard input) matches" ]]
-   then
-    echo dev: $devApns
-    LC_ALL=C sed -i '' 's/<string>development<\/string>//g' $entitlements
-  fi
-
-  if [[ $prodApns = "Binary file (standard input) matches" ]]
-   then
-    echo prod: $prodApns
-    LC_ALL=C sed -i '' 's/<string>production<\/string>//g' $entitlements
-  fi
-  cat $entitlements
-  printf "${NC}\n"
-}
+# editEntitlementsFunction()
+# {
+#   printf "${GREEN}Editing the entitlements\n"
+#   devApns=$(cat $entitlements | grep "development")
+#   prodApns=$(cat $entitlements | grep "production")
+#   LC_ALL=C sed -i '' 's/^.*<?xml/<?xml/g' $entitlements
+#   LC_ALL=C sed -i '' 's/false/true/g' $entitlements
+#   LC_ALL=C sed -i '' 's/<key>aps-environment<\/key>//g' $entitlements
+#   if [[ $devApns = "Binary file (standard input) matches" ]]
+#    then
+#     echo dev: $devApns
+#     LC_ALL=C sed -i '' 's/<string>development<\/string>//g' $entitlements
+#   fi
+#
+#   if [[ $prodApns = "Binary file (standard input) matches" ]]
+#    then
+#     echo prod: $prodApns
+#     LC_ALL=C sed -i '' 's/<string>production<\/string>//g' $entitlements
+#   fi
+#   cat $entitlements
+#   printf "${NC}\n"
+# }
 
 extractVersionFuntion()
 {
@@ -388,58 +422,10 @@ copyConfigPlistFunction()   # insterting the chosen Config.plist in the app
     setNewIpaNameFuntion
   else
     case $confiArg in
-      dev-plt )
+      $confiArg )
         echo $confiArg
-        cp -v "$sharedResourcesPath/ConfigPlists/dev-plt.plist" "$payloadFolder/$payloadApp/Config.plist"
+        cp -v "$sharedResourcesPath/ConfigPlists/"$confiArg".plist" "$payloadFolder/$payloadApp/Config.plist"
         ;;
-      int )
-        echo $confiArg
-        cp -v "$sharedResourcesPath/ConfigPlists/int.plist" "$payloadFolder/$payloadApp/Config.plist"
-        ;;
-      dev-2 )
-        echo $confiArg
-        cp -v "$sharedResourcesPath/ConfigPlists/dev-2.plist" "$payloadFolder/$payloadApp/Config.plist"
-        ;;
-      acc-plt )
-        echo $confiArg
-        cp -v "$sharedResourcesPath/ConfigPlists/acc-plt.plist" "$payloadFolder/$payloadApp/Config.plist"
-        ;;
-        dev-7 )
-          echo $confiArg
-          cp -v "$sharedResourcesPath/ConfigPlists/dev-7.plist" "$payloadFolder/$payloadApp/Config.plist"
-          ;;
-        dev2 )
-          echo $confiArg
-          cp -v "$sharedResourcesPath/ConfigPlists/dev2.plist" "$payloadFolder/$payloadApp/Config.plist"
-            ;;
-        dev4 )
-          echo $confiArg
-          cp -v "$sharedResourcesPath/ConfigPlists/dev4.plist" "$payloadFolder/$payloadApp/Config.plist"
-            ;;
-        dev3 )
-          echo $confiArg
-          cp -v "$sharedResourcesPath/ConfigPlists/dev3.plist" "$payloadFolder/$payloadApp/Config.plist"
-            ;;
-        dev-3 )
-          echo $confiArg
-          cp -v "$sharedResourcesPath/ConfigPlists/dev-3.plist" "$payloadFolder/$payloadApp/Config.plist"
-            ;;
-        DelSub )
-          echo $confiArg
-          cp -v "$sharedResourcesPath/ConfigPlists/DelSub.plist" "$payloadFolder/$payloadApp/Config.plist"
-            ;;
-        PLT001-DEV )
-          echo $confiArg
-          cp -v "$sharedResourcesPath/ConfigPlists/PLT001-DEV.plist" "$payloadFolder/$payloadApp/Config.plist"
-            ;;
-        PLT001-ACC )
-          echo $confiArg
-          cp -v "$sharedResourcesPath/ConfigPlists/PLT001-ACC.plist" "$payloadFolder/$payloadApp/Config.plist"
-                ;;
-        DelTest )
-            echo $confiArg
-            cp -v "$sharedResourcesPath/ConfigPlists/DelTest.plist" "$payloadFolder/$payloadApp/Config.plist"
-                        ;;
     esac
   fi
   printf "${NC}\n"
@@ -493,7 +479,7 @@ signHPMCFunction()
           ;;
       esac
   fi
-  if [[ $versionArg = 3.4 ]]
+  if [[ $versionArg = 3.4 ]] || [[ $versionArg = 3.4p2 ]] || [[ $versionArg = 3.5 ]] || [[ $versionArg = 3.5p3 ]] || [[ $versionArg = 3.5p5 ]]
     then
       case $entitlementsArg in
         hpmc )
@@ -550,7 +536,7 @@ resignAgentsFunction()
         then
           ./HPMCEnabler "$agentFolder/$ogIpa" -codesign $codesign -p "$provisioningProfilePath" -v -V -n "$ogIpa" -d "$signedAgentsFolder/$dateDir"
       fi
-      if [[ $versionArg = 3.4 ]]
+      if [[ $versionArg = 3.4 ]] || [[ $versionArg = 3.4p2 ]] || [[ $versionArg = 3.5 ]] || [[ $versionArg = "3.5p3" ]] || [[ $versionArg = "3.5p5" ]]
         then
           ./iOSEnabler "$agentFolder/$ogIpa" -codesign $codesign -p "$provisioningProfilePath" -v -V -n "$ogIpa" -d "$signedAgentsFolder/$dateDir"
       fi
@@ -576,16 +562,14 @@ cleanupFunction()
     configPlist="$DIR/_TEMP/Payload/$payloadApp/Config.plist"
     cp -v -p -R "$infoPlist" "$destinationFolder"
     cp -v -p -R "$configPlist" "$destinationFolder"
+    cd  $tempFolder
+    ipafile=$(ls | grep '.ipa')
+    cp -v -p -R "$ipafile" "$destinationFolder"
   }
   copyPlist
   rm -rf $tempFolder
 }
 
-exitProcedure()
-{
-  rm -rf $tempFolder
-  exit 1
-}
 
 if [[ $agentsOnly = "yes" ]]
   then
@@ -607,7 +591,7 @@ if [[ $agentsOnly = "yes" ]]
       destinationFolderCheckFunction
       getProvisionedDevicesFunction
       extractEntitlementsFunction
-      editEntitlementsFunction
+      #editEntitlementsFunction
       extractVersionFuntion
       extractBundleIDFunction
       copyConfigPlistFunction
