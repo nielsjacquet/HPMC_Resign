@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 
 ## for debugging, remove all single #, double ## is used for documentation
+echo "__________              .__                  _____               ____ _________________________"
+echo "\______   \ ____   _____|__| ____   ____   _/ ____\___________  |    |   \_   _____/\__    ___/"
+echo " |       _// __ \ /  ___/  |/ ___\ /    \  \   __\/  _ \_  __ \ |    |   /|    __)    |    |   "
+echo " |    |   \  ___/ \___ \|  / /_/  >   |  \  |  | (  <_> )  | \/ |    |  / |     \     |    |   "
+echo " |____|_  /\___  >____  >__\___  /|___|  /  |__|  \____/|__|    |______/  \___  /     |____|   "
+echo "        \/     \/     \/  /_____/      \/                                     \/               "
+
 cleanup()
 {
   rm -rf "$tempFolder"
@@ -174,7 +181,7 @@ copy()
 }
 
 ###-----------------------------------
-#calling the funtions
+## calling the funtions
 optionchecks
 setVars
 versionVars
