@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-/iOSEnabler "$agentFolder/$ogIpa" -codesign $codesign -p "$provisioningProfilePath" -v -V -n "$ogIpa" -d "$signedAgentsFolder/$dateDir"
+
+## for debugging, remove all single #, double ## is used for documentation
 echo "__________              .__                 ____ _________________________    _____                         __          "
 echo "\______   \ ____   _____|__| ____   ____   |    |   \_   _____/\__    ___/   /  _  \    ____   ____   _____/  |_  ______"
 echo " |       _// __ \ /  ___/  |/ ___\ /    \  |    |   /|    __)    |    |     /  /_\  \  / ___\_/ __ \ /    \   __\/  ___/"
@@ -21,12 +22,11 @@ exitRoutine()
 helpFunction()
 {
   clear
-  echo
-  echo This script is drag and drop friendly,
-  echo you can just drop the ipa file after using -i as option
-  echo
+  echo This script will automate the signing of the Agents needed for
+  echo UFT testing
+  echo ""
   echo Correct use of the script:
-  echo "Resign -v (version) -i (ipafile) -? or -h for help"
+  echo "Agents -v (version) -? or -h for help"
   echo
   cleanup
   exit 1
@@ -65,51 +65,61 @@ setVars()
 ## set the version specific variables
 versionVars()
 {
+  ## If there is no version arg used the script will exit and remove all created objects if any
   if [[ -z "$versionArg" ]]
   then
     echo no verion used
     exitRoutine
   fi
 
-  if [[ "$versionArg" = 3.5p5 ]]
-    then
+  case $versionArg in
+    3.5p5 )
       resourcesPath="$DIR/HPMC3.5p5/Resources"
       iosJsPath="$resourcesPath/ios"
       agentFolder="$DIR/HPMC3.5p5/OriginalAgents"
-    else
-      echo
-      echo no correct version is used
-      helpFunction
-  fi
+      ;;
+    3.5p6 )
+      resourcesPath="$DIR/HPMC3.5p6/Resources"
+      iosJsPath="$resourcesPath/ios"
+      agentFolder="$DIR/HPMC3.5p6/OriginalAgents"
+      ;;
+  esac
+
 }
 
 ## grab the provisioning Profile in the shared resources folder
 getProfile()
 {
+  echo Grabbing the provisioningProfile
   cd "$profilePath"
   provisioningProfile=$(ls | grep ".mobileprovision")
   provisioningProfile="$profilePath/$provisioningProfile"
-  # echo provisioningProfile: $provisioningProfile
+  echo provisioningProfile: $provisioningProfile
 }
 
+## Make the new destination folder
 makeDestiationFolder()
 {
   fixDateFolder="$DIR"/SignedIpas/Agents/"$fixDate"Agents-HPMCenabled-"$versionArg"
   mkdir "$fixDateFolder"
 }
 
+## Resign all the agents in the version specific folder
+## The for funcions will do all the agents one by one
 resigning()
 {
   for agents in "$agentFolder"/*
    do
      ogIpa=$(echo "$(basename "$agents")")
      echo "$ogIpa"
+     echo profilePath: $provisioningProfile
      printf "${YELLOW}The ipa that will be signed: ${GREEN}$ogIpa${NC}\n"
      cd "$resourcesPath"
-         ./iOSEnabler "$agentFolder/$ogIpa" -codesign $codesign -p "$provisioningProfilePath" -v -V -n "$ogIpa" -d "$fixDateFolder"
+         ./iOSEnabler "$agentFolder/$ogIpa" -codesign $codesign -p "$provisioningProfile" -V -n "$ogIpa" -d "$fixDateFolder" #-v
   done
 }
 
+## Copy the provisioned devices from the provisioning profile to the signing folder for future reference
 copy()
 {
   mkdir "$DIR/_TEMP"
@@ -118,8 +128,9 @@ copy()
   LC_ALL=C sed '1,/TeamIdentifier/!d' $extractFile >> "$provDevices"
   rm $extractFile
 }
-##--------------------------
-## Calling the functions
+
+###-----------------------------------
+## calling the funtions
 optionchecks
 setVars
 versionVars
