@@ -8,6 +8,9 @@ echo " |    |   \  ___/ \___ \|  / /_/  >   |  \  |  | (  <_> )  | \/ |    |  / 
 echo " |____|_  /\___  >____  >__\___  /|___|  /  |__|  \____/|__|    |______/  \___  /     |____|   "
 echo "        \/     \/     \/  /_____/      \/                                     \/               "
 
+## Setting the homefolder
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"        # Homedir
+
 cleanup()
 {
   rm -rf "$tempFolder"
@@ -23,11 +26,19 @@ helpFunction()
 {
   clear
   echo
-  echo This script is drag and drop friendly,
-  echo you can just drop the ipa file after using -i as option
+  echo "This script is drag and drop friendly,"
+  echo "you can just drop the ipa file after using -i as option"
   echo
-  echo Correct use of the script:
+  echo "Correct use of the script:"
   echo "Resign -v (version) -i (ipafile) -? or -h for help"
+  echo
+  cd $DIR
+  availableVersions=$(ls -d */ | grep HPMC)
+  echo "Available versions:"
+  for folders in $availableVersions
+    do
+      echo $folders
+    done
   echo
   exitRoutine
 }
@@ -58,7 +69,6 @@ setVars()
 {
   codesign="GZ75RPKBFF"
   fixDate=$(date +"%Y%m%d-%Hh%M")
-  DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"        # Homedir
   profilePath="$DIR/_SharedResources/ProvisioningProfile"
   tempFolder="$DIR/_TEMP"
   ipaPath="$ipaArg"
@@ -68,21 +78,26 @@ setVars()
 ## set the version specific variables
 versionVars()
 {
+  ##first check if the versionArg is not empty
   if [[ -z "$versionArg" ]]
+    then
+      echo no verion used
+      exitRoutine
+    fi
+
+  ##Grabbing and checkig if the versionArg is correct
+  cd $DIR                                                                                       ##go to the homefolder
+  availableVersions=$(ls -d */ | grep HPMC)                                                     ##list all folders beginning with HPMC
+  ##echo availableVersions: $availableVersions
+  if [[ -z $availableVersions ]]                                                                ##if $availableVersions is empty, show the helpFunction
   then
-    echo no verion used
-    exitRoutine
+    echo "The version you selected is not available, please check and re-run the script."
+    helpFunction
   fi
 
-  if [[ "$versionArg" = 3.5p5 ]]
-    then
-      resourcesPath="$DIR/HPMC3.5p5/Resources"
-      iosJsPath="$resourcesPath/ios"
-    else
-      echo
-      echo no correct version is used
-      helpFunction
-  fi
+  ##Setting the version variables from $versionArg
+  resourcesPath="$DIR/HPMC$versionArg/Resources"
+  iosJsPath="$resourcesPath/ios"
 }
 
 ## grab the provisioning Profile in the shared resources folder
