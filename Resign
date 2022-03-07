@@ -32,6 +32,8 @@ helpFunction()
   echo "Correct use of the script:"
   echo "Resign -v (version) -i (ipafile) -? or -h for help"
   echo
+  echo "Please only type the version without HPMC"
+  echo
   cd $DIR
   availableVersions=$(ls -d */ | grep HPMC)
   echo "Available versions:"
