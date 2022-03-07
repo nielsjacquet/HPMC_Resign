@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"        # Homedir
+
 ## for debugging, remove all single #, double ## is used for documentation
 echo "__________              .__                 ____ _________________________    _____                         __          "
 echo "\______   \ ____   _____|__| ____   ____   |    |   \_   _____/\__    ___/   /  _  \    ____   ____   _____/  |_  ______"
@@ -56,7 +58,6 @@ setVars()
 {
   codesign="GZ75RPKBFF"
   fixDate=$(date +"%Y%m%d-%Hh%M")
-  DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"        # Homedir
   profilePath="$DIR/_SharedResources/ProvisioningProfile"
   tempFolder="$DIR/_TEMP"
   extractFile="$tempFolder/test.txt"
@@ -65,26 +66,27 @@ setVars()
 ## set the version specific variables
 versionVars()
 {
-  ## If there is no version arg used the script will exit and remove all created objects if any
+  ##first check if the versionArg is not empty
   if [[ -z "$versionArg" ]]
+    then
+      echo no verion used
+      exitRoutine
+    fi
+
+  ##Grabbing and checkig if the versionArg is correct
+  cd $DIR                                                                                       ##go to the homefolder
+  availableVersions=$(ls -d */ | grep HPMC)                                                     ##list all folders beginning with HPMC
+  ##echo availableVersions: $availableVersions
+  if [[ -z $availableVersions ]]                                                                ##if $availableVersions is empty, show the helpFunction
   then
-    echo no verion used
-    exitRoutine
+    echo "The version you selected is not available, please check and re-run the script."
+    helpFunction
   fi
 
-  case $versionArg in
-    3.5p5 )
-      resourcesPath="$DIR/HPMC3.5p5/Resources"
-      iosJsPath="$resourcesPath/ios"
-      agentFolder="$DIR/HPMC3.5p5/OriginalAgents"
-      ;;
-    3.5p6 )
-      resourcesPath="$DIR/HPMC3.5p6/Resources"
-      iosJsPath="$resourcesPath/ios"
-      agentFolder="$DIR/HPMC3.5p6/OriginalAgents"
-      ;;
-  esac
-
+  ##Setting the version variables from $versionArg
+  resourcesPath="$DIR/HPMC$versionArg/Resources"
+  iosJsPath="$resourcesPath/ios"
+  agentFolder="$DIR/HPMC$versionArg/OriginalAgents"
 }
 
 ## grab the provisioning Profile in the shared resources folder
