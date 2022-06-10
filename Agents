@@ -122,11 +122,12 @@ resigning()
 {
   for agents in "$agentFolder"/*
    do
+     cd "$resourcesPath"
      ogIpa=$(echo "$(basename "$agents")")
      echo "$ogIpa"
      echo profilePath: $provisioningProfile
+     echo used iOSEnabler folder: "$resourcesPath"
      printf "${YELLOW}The ipa that will be signed: ${GREEN}$ogIpa${NC}\n"
-     cd "$resourcesPath"
          ./iOSEnabler "$agentFolder/$ogIpa" -codesign $codesign -p "$provisioningProfile" -V -n "$ogIpa" -d "$fixDateFolder" #-v
   done
 }
