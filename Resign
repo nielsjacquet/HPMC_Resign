@@ -9,7 +9,7 @@ echo " |____|_  /\___  >____  >__\___  /|___|  /  |__|  \____/|__|    |______/  
 echo "        \/     \/     \/  /_____/      \/                                     \/               "
 
 ## Setting the homefolder
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"        # Homedir
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"        ## Homedir
 
 cleanup()
 {
