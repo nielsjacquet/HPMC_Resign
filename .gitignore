@@ -20,4 +20,4 @@ _SharedResources/
 _TEMP/
 
 ##ignore configfiles
-*.config
+.config
